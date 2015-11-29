@@ -6,6 +6,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.ajp.Ajp13SocketConnector;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -91,17 +93,35 @@ public class VRaptorServer {
 	}
 
 	private static Server createServer() {
-		String webPort = getPort();
-		if (webPort == null || webPort.isEmpty()) {
-			webPort = System.getProperty("server.port", "8080");
+		Server server = new Server(getHttpPort());
+		int ajpPort = getAjpPort();
+
+		if (ajpPort > 0) {
+			Connector ajpConnector = new Ajp13SocketConnector();
+			ajpConnector.setPort(ajpPort);
+
+			server.addConnector(ajpConnector);
 		}
-		Server server = new Server(Integer.valueOf(webPort));
+
 		return server;
 	}
 
-	private static String getPort() {
+	private static int getHttpPort() {
 		String port = System.getenv("PORT");
-		return port;
+		if (port == null || port.isEmpty()) {
+			port = System.getProperty("server.port", "8080");
+		}
+
+		return Integer.valueOf(port);
+	}
+
+	private static int getAjpPort() {
+		String port = System.getenv("AJP_PORT");
+		if (port == null || port.isEmpty()) {
+			port = System.getProperty("server.ajp_port", "0");
+		}
+
+		return Integer.valueOf(port);
 	}
 
 	public void stop() {
